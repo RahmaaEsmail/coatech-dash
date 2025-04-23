@@ -1,0 +1,9 @@
+@forward './base/global';
+@forward './layout/main-layout';
+@use './base/variables' as var;
+@forward './layout/sidebar';
+@forward './layout/header';
+:root {
+    --main-red-color : #{var.$primary-color};
+    --main-blue-color : #{var.$secondary-color};
+}

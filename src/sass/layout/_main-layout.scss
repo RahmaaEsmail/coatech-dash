@@ -1,0 +1,10 @@
+.main-layout {
+    display: grid;
+
+    .main-content {
+        max-width: calc(100% - 290px);
+        width: 100%;
+        margin-right: 10px;
+        margin-left: 280px !important;
+    }
+}

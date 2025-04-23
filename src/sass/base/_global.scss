@@ -1,0 +1,37 @@
+.input-group {
+    display:flex;
+    flex-direction: column;
+    gap: 7px;
+    
+    textarea , select {
+        border: 1px solid #ccc !important;
+        outline: none;
+        border-radius: 6px;
+        padding: 10px 7px;
+    }
+    
+    label {
+        font-size: 16px;
+        font-weight: 600;
+        color:rgba(9, 33, 67, 1);
+    }
+
+    input {
+        border: 1px solid #ccc;
+        outline: none;
+        border-radius: 6px;
+        padding: 10px 7px;
+
+        &:focus {
+            border: 2px solid var(--main-red-color);
+        }
+    }
+
+    
+}
+
+
+
+body {
+    background-color: #f5f5f5;
+}
