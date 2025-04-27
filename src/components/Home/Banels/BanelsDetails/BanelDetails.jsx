@@ -1,101 +1,62 @@
 import { Modal, Table } from "antd";
 import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
+import { handleUpdateQuote } from "../../../../features/quotatationsSlice";
+import { handleFetchUsersQuotations } from "../../../../features/usersSlice";
+import { configs } from "../../../../configs";
 
-export default function BanelDetails({ open, setOpen, item }) {
+export default function BanelDetails({ open, setOpen, item, quote_id, data }) {
+  const dispatch = useDispatch();
+  const { update_loading } = useSelector((state) => state?.quotations);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [rowData, setRowData] = useState({});
   const [showEditPrice, setShowEditPrice] = useState(false);
-  const [quotationData, setQuotationData] = useState({
-    price: null,
-    weight: null,
-    notes: "",
-    status : "",
-  });
   const [showNoteModal, setShowNoteModal] = useState(false);
-  const userInfo = JSON.parse(localStorage.getItem("user_info"));
-
-  const [allQuotations, setAllQuotations] = useState(
-    JSON.parse(localStorage.getItem("All_admin_quotations")) || []
-  );
-
-  const [currentItem, setCurrentItem] = useState(item);
+  const [rowData, setRowData] = useState({});
+  const [currentItem, setCurrentItem] = useState([]);
+  const userInfo =
+    JSON.parse(localStorage.getItem(configs.COATECH_USER_PROFILE)) || {};
 
   useEffect(() => {
-    setCurrentItem(item);
-  }, [item]);
-
-  // useEffect(() => {
-  //   setQuotationData({
-  //     price: rowData?.price,
-  //     weight: rowData?.quantity?.split("kg")[0],
-  //     notes: currentItem?.notes,
-  //   });
-  // }, [rowData]);
-
-  useEffect(() => {
-    console.log(rowData);
-    setCurrentItem(item);
-
-    // إذا مفيش rowData حالياً، خليه ياخد أول منتج كـ default للعرض
-    if (!rowData?.id && item?.products?.length) {
-      const defaultProduct = item.products[0];
-      setRowData(defaultProduct);
-      setQuotationData({
-        price: rowData?.price,
-        // weight: rowDD?.quantity,
-        notes: item?.notes || "",
-      });
+    if (item) {
+      setCurrentItem(item);
+      if (!rowData?.id && Array.isArray(item)) {
+        const defaultProduct = item[0];
+        setRowData(defaultProduct);
+      }
     }
   }, [item]);
-
-  useEffect(() => {
-    console.log(quotationData?.weight);
-  }, [quotationData]);
 
   const variation_columns = [
     {
       dataIndex: "color",
       key: "color",
-      title: "Name",
+      title: "Color",
     },
     {
       title: "Details",
       key: "details",
       render: (row) => (
         <div className="flex flex-wrap gap-2">
-          {row.catalog && (
-            <span className="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full">
-              Catalog: {row.catalog}
-            </span>
-          )}
-          {row.powder_type && (
-            <span className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
-              Powder: {row.powder_type}
-            </span>
-          )}
-          {row.finish && (
-            <span className="bg-yellow-100 text-yellow-800 text-xs px-2 py-1 rounded-full">
-              Finish: {row.finish}
-            </span>
-          )}
-          {row.gloss_level && (
-            <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
-              Gloss: {row.gloss_level}
-            </span>
-          )}
-          {row.clear_coats && (
-            <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
-              Coats: {row.clear_coats}
-            </span>
-          )}
-          {row.attribute && (
-            <span
-              style={{ backgroundColor: row.attribute }}
-              className="text-white text-xs px-2 py-1 rounded-full"
-            >
-              Attribute: {row.attribute}
-            </span>
+          {Object.entries(row || {}).map(([key, value]) =>
+            value ? (
+              <span
+                key={key}
+                className={`text-xs px-2 py-1 rounded-full ${
+                  key.includes("color")
+                    ? "bg-green-100 text-green-800"
+                    : key.includes("finish")
+                    ? "bg-yellow-100 text-yellow-800"
+                    : key.includes("gloss")
+                    ? "bg-blue-100 text-blue-800"
+                    : key.includes("powder")
+                    ? "bg-orange-100 text-orange-800"
+                    : "bg-gray-100 text-gray-800"
+                }`}
+              >
+                {key}: {value}
+              </span>
+            ) : null
           )}
         </div>
       ),
@@ -103,42 +64,58 @@ export default function BanelDetails({ open, setOpen, item }) {
   ];
 
   const product_columns = [
+    { dataIndex: "product_id", key: "product_id", title: "#" },
     {
-      dataIndex: "id",
-      key: "id",
-      title: "#",
-    },
-    {
-      dataIndex: "banel_img",
-      key: "banel_img",
+      dataIndex: "product_image",
+      key: "product_image",
       title: "Image",
       render: (src) => (
         <img
           src={src}
           className="w-[100px] h-[100px] rounded-md object-cover"
+          alt="product"
         />
       ),
     },
     {
-      dataIndex: "color",
-      key: "color",
-      title: "Name",
+      dataIndex: "product_color",
+      key: "product_color",
+      title: "Color",
+      render: (row) => (
+        <div
+          className={`w-10 h-10 rounded-full`}
+          style={{ backgroundColor: row }}
+        ></div>
+      ),
     },
     {
-      dataIndex: "quantity",
-      key: "quantity",
-      title: "Weight",
-      render: (row) => <p>{row || "--"}</p>,
+      title: "User Weight",
+      render: (record) => (
+        <p>
+          {record?.product_quantity} {record?.type || ""}
+        </p>
+      ),
     },
     {
-      dataIndex: "price",
-      key: "price",
+      title: "Admin Weight",
+      render: (record) =>
+        record?.new_quantity ? (
+          <p>
+            {record?.new_quantity} {record?.type}
+          </p>
+        ) : (
+          "--"
+        ),
+    },
+    {
       title: "Price",
-      render: (row) =>
-        new Intl.NumberFormat("en-US", {
-          style: "currency",
-          currency: "USD",
-        }).format(row),
+      render: (record) =>
+        record?.price
+          ? new Intl.NumberFormat("en-US", {
+              style: "currency",
+              currency: "USD",
+            }).format(record?.price || 0)
+          : "--",
     },
     {
       title: "Actions",
@@ -153,7 +130,7 @@ export default function BanelDetails({ open, setOpen, item }) {
           >
             Details
           </button>
-          {userInfo?.role === "admin" && (
+          {userInfo?.admin_role !== "user" && (
             <button
               onClick={() => {
                 setRowData(record);
@@ -167,149 +144,161 @@ export default function BanelDetails({ open, setOpen, item }) {
         </div>
       ),
     },
-  ];
+  ].filter(Boolean);
 
-  const handleEditPrice = () => {
-    if (quotationData?.weight % 25 !== 0) {
-      toast.warn("Please enter a valid weight that is a multiple of 25 kg.");
-      return;
-    }
-
-    const updatedQuotations = allQuotations.map((quote) => {
-      if (quote.id === currentItem.id) {
-        const updatedProducts = quote.products.map((product) =>
-          product.id === rowData.id
-            ? {
-                ...product,
-                price: Number(quotationData.price),
-                quantity: `${quotationData?.weight} kg`,
+  const handleEditNote = () => {
+    const data_send = {
+      qoute_id: quote_id,
+      product_ids: [],
+      admin_notes: rowData?.admin_notes,
+    };
+    dispatch(handleUpdateQuote({ body: data_send }))
+      .unwrap()
+      .then((res) => {
+        if (res?.message === "Quote updated successfully") {
+          toast.success(res?.message);
+          dispatch(handleFetchUsersQuotations())
+            .unwrap()
+            .then((res) => {
+              const updatedData = res?.data?.find(
+                (item) => item?.qoute_id == quote_id
+              );
+              console.log(updatedData);
+              if (updatedData) {
+                setRowData((prev) => ({
+                  ...prev,
+                  admin_notes: updatedData?.admin_notes,
+                }));
               }
-            : product
-        );
-        return {
-          ...quote,
-          products: updatedProducts,
-          notes: quotationData?.notes,
-        };
-      }
-      return quote;
-    });
 
-    localStorage.setItem(
-      "All_admin_quotations",
-      JSON.stringify(updatedQuotations)
-    );
-    setAllQuotations(updatedQuotations);
-
-    const updatedCurrentItem = updatedQuotations.find(
-      (q) => q.id === currentItem.id
-    );
-    setCurrentItem(updatedCurrentItem);
-
-    const updatedRow = updatedCurrentItem.products.find(
-      (p) => p.id === rowData.id
-    );
-    setRowData(updatedRow);
-
-    toast.success("Price updated successfully");
-    setShowEditPrice(false);
+              if (updatedData?.products) {
+                setCurrentItem(updatedData.products);
+              }
+            });
+          setShowNoteModal(false);
+        } else {
+          toast.error(res?.message || "Error");
+        }
+      })
+      .catch(() => toast.error("Something went wrong"));
   };
 
-  function handleEditNote() {
-    const updatedQuotations = allQuotations.map((quote) => {
-      if (quote.id === currentItem.id) {
-        return {
-          ...quote,
-          // response : quotationData?.status,
-          notes: quotationData?.notes, // بس بنعدل الـ notes
-        };
-      }
-      return quote;
-    });
+  const handleSubmit = () => {
+    const data_send = {
+      qoute_id: quote_id,
+      product_ids: [
+        {
+          price: rowData?.price,
+          qoute_product_id: rowData?.qoute_product_id,
+          new_quantity: rowData?.new_quantity,
+          product_id: rowData?.product_id,
+        },
+      ],
+    };
 
-    localStorage.setItem(
-      "All_admin_quotations",
-      JSON.stringify(updatedQuotations)
-    );
-    setAllQuotations(updatedQuotations);
+    dispatch(handleUpdateQuote({ body: data_send }))
+      .unwrap()
+      .then((res) => {
+        if (res?.message === "Quote updated successfully") {
+          toast.success(res?.message);
+          setShowEditPrice(false);
 
-    const updatedCurrentItem = updatedQuotations.find(
-      (q) => q.id === currentItem.id
-    );
-    setCurrentItem(updatedCurrentItem);
+          const updatedItems = currentItem.map((item) =>
+            item.product_id === rowData.product_id
+              ? {
+                  ...item,
+                  price: rowData.price,
+                  new_quantity: rowData.new_quantity,
+                }
+              : item
+          );
+          setCurrentItem([...updatedItems]);
 
-    toast.success("Note updated successfully");
-    setShowNoteModal(false); // نقفل المودال بعد الحفظ
-  }
+          setRowData((prev) => ({
+            ...prev,
+            price: rowData.price,
+            new_quantity: rowData.new_quantity,
+          }));
+          dispatch(handleFetchUsersQuotations());
+        } else {
+          toast.error(res?.message || "Error");
+        }
+      })
+      .catch(() => toast.error("Something went wrong"));
+  };
 
   useEffect(() => {
-    console.log(currentItem);
-  }, [currentItem]);
+    console.log(data);
+    setRowData({
+      ...rowData ,
+      admin_notes : data?.admin_notes
+    })
+  }, [data]);
 
   return (
     <>
-      {/* Variations Modal */}
       <Modal
+        open={showDetailsModal}
         width={800}
         footer={null}
-        open={showDetailsModal}
         onCancel={() => setShowDetailsModal(false)}
       >
         <h3 className="text-lg font-semibold mb-3">Banel Variations</h3>
         <Table
           scroll={{ x: "max-content" }}
           columns={variation_columns}
-          dataSource={rowData?.variations || []}
-          rowKey={(row) => row.color}
+          dataSource={
+            rowData?.props?.length > 2
+              ? [JSON?.parse(rowData?.props)?.formData]
+              : []
+          }
+          rowKey={(row) => row.color || Math.random()}
         />
       </Modal>
 
-      {/* Main Details Modal */}
       <Modal
         open={open}
         width={700}
-        onCancel={() => setOpen(false)}
         footer={null}
+        onCancel={() => setOpen(false)}
       >
         <div className="flex justify-between items-center my-5">
-          <h3 className="font-semibold text-[17px] mb-2">Product Details</h3>
-          <button
-            onClick={() => {
-              setShowNoteModal(true);
-            }}
-            className="bg-(--main-blue-color) px-4 py-2 rounded-md text-white"
-          >
-            Edit
-          </button>
+          <h3 className="font-semibold text-[17px]">Product Details</h3>
+          {userInfo?.admin_role !== "user" && (
+            <button
+              onClick={() => setShowNoteModal(true)}
+              className="bg-(--main-blue-color) px-4 py-2 rounded-md text-white"
+            >
+              Edit
+            </button>
+          )}
         </div>
-
         <Table
           scroll={{ x: "max-content" }}
           columns={product_columns}
-          dataSource={currentItem?.products || []}
-          rowKey={(row) => row.id}
+          dataSource={currentItem || []}
+          rowKey="product_id"
         />
-
         <div className="grid grid-cols-3 gap-3 items-center mt-4 text-[16px]">
-          {currentItem?.products?.length > 0 && (
+          {currentItem?.length > 0 && (
             <div className="flex gap-2 items-center">
               <p className="font-semibold text-(--main-blue-color)">
                 Number Of Products:
               </p>
-              <p>{currentItem.products.length}</p>
+              <p>{currentItem?.length}</p>
             </div>
           )}
 
-          {currentItem?.products?.some((product) =>
-            parseFloat(product?.quantity)
+          {currentItem?.some((product) =>
+            parseFloat(product?.product_quantity)
           ) && (
             <div className="flex gap-2 items-center">
               <p className="font-semibold text-(--main-blue-color)">
                 Total Weight:
               </p>
               <p>
-                {currentItem.products.reduce((total, product) => {
-                  const kgValue = parseFloat(product?.quantity);
+                {currentItem?.reduce((total, product) => {
+                  const kgValue = parseFloat(product?.product_quantity);
                   return total + (isNaN(kgValue) ? 0 : kgValue);
                 }, 0)}{" "}
                 Kg
@@ -317,7 +306,7 @@ export default function BanelDetails({ open, setOpen, item }) {
             </div>
           )}
 
-          {currentItem?.products?.some((product) => Number(product?.price)) && (
+          {currentItem?.some((product) => Number(product?.price)) && (
             <div className="flex gap-2 items-center">
               <p className="font-semibold text-(--main-blue-color)">
                 Total Price:
@@ -327,7 +316,7 @@ export default function BanelDetails({ open, setOpen, item }) {
                   style: "currency",
                   currency: "USD",
                 }).format(
-                  currentItem.products.reduce(
+                  currentItem?.reduce(
                     (total, prod) => total + Number(prod?.price || 0),
                     0
                   )
@@ -337,110 +326,94 @@ export default function BanelDetails({ open, setOpen, item }) {
           )}
         </div>
 
-        <div className="flex flex-col mt-4 text-[16px]">
-          <p className="font-bold text-(--main-blue-color)">Notes:</p>
-          <p>{currentItem?.notes}</p>
-        </div>
+        {data?.admin_id && (
+          <div className="flex flex-col mt-4">
+            <p className="font-bold text-(--main-blue-color)">Admin Name:</p>
+            <p className="text-[16px] font-bold">{data?.admin?.admin_name}</p>
+          </div>
+        )}
+
+        {data?.admin_id && (
+          <div className="flex flex-col mt-4 text-[16px]">
+            <p className="font-bold text-(--main-blue-color)">Notes:</p>
+            <p>{rowData?.admin_notes}</p>{" "}
+          </div>
+        )}
       </Modal>
 
       <Modal
         open={showNoteModal}
-        onCancel={() => setShowNoteModal(false)}
         footer={null}
+        onCancel={() => setShowNoteModal(false)}
         title="Edit Note"
       >
         <div className="input-group">
           <label>Notes</label>
           <textarea
-            value={quotationData?.notes}
+            value={rowData?.admin_notes || ""}
             onChange={(e) =>
-              setQuotationData({ ...quotationData, notes: e.target.value })
+              setRowData({ ...rowData, admin_notes: e.target.value })
             }
             className="min-h-[100px] border border-[#ccc] rounded-[6px] p-[7px_10px]"
           />
         </div>
-
-        {/* <div className="input-group my-2">
-          <label>Change Status</label>
-          <select
-                       className="border border-[#ccc] rounded-[6px] p-[7px_10px]"
-
-          value={item?.response || quotationData?.status} onChange={(e) => setQuotationData({...quotationData , status :e.target.value})}>
-            <option selected disabled value="">Change Status</option>
-            <option value={1}>Support Reply</option>
-            <option value={0}>Pending</option>
-          </select>
-        </div> */}
-
-        <div className="flex gap-2 mt-3 items-center">
+        <div className="flex gap-2 mt-3">
           <button
-            onClick={() => {
-              if (!quotationData?.notes?.trim()) {
-                toast.warn("Please enter a note before saving.");
-                return;
-              }
-              handleEditNote();
-              setShowNoteModal(false);
-            }}
-            className="border p-2 border-(--main-blue-color) text-white bg-(--main-blue-color) flex justify-center items-center rounded-md"
+            onClick={handleEditNote}
+            className="bg-(--main-blue-color) text-white px-4 py-2 rounded-md"
           >
-            Save
+            {update_loading ? "Loading..." : "Save"}
           </button>
           <button
             onClick={() => setShowNoteModal(false)}
-            className="border p-2 border-(--main-blue-color) text-(--main-blue-color) flex justify-center items-center rounded-md"
+            className="border border-(--main-blue-color) text-(--main-blue-color) px-4 py-2 rounded-md"
           >
             Cancel
           </button>
         </div>
       </Modal>
 
-      {/* Edit Price Modal */}
       <Modal
         open={showEditPrice}
-        onCancel={() => setShowEditPrice(false)}
-        title="Edit Quotation Price"
         footer={null}
+        title="Edit Quotation Price"
+        onCancel={() => setShowEditPrice(false)}
       >
         <div className="flex flex-col gap-3">
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2">
             <div className="input-group w-full">
               <label>Price</label>
               <input
                 type="number"
-                value={quotationData?.price || rowData?.price}
+                value={rowData?.price || ""}
                 onChange={(e) =>
-                  setQuotationData({ ...quotationData, price: e.target.value })
+                  setRowData({ ...rowData, price: e.target.value })
                 }
                 className="focus:!border-[2px] focus:!border-(--main-blue-color)"
               />
             </div>
-
             <div className="input-group w-full">
-              <label>Weight in (Kg)</label>
+              <label>Weight ({rowData?.type})</label>
               <input
                 type="text"
-                value={
-                  quotationData?.weight || rowData?.quantity?.split("kg")[0]
-                }
+                value={rowData?.new_quantity || ""}
                 onChange={(e) =>
-                  setQuotationData({ ...quotationData, weight: e.target.value })
+                  setRowData({ ...rowData, new_quantity: e.target.value })
                 }
                 className="focus:!border-[2px] focus:!border-(--main-blue-color)"
               />
             </div>
           </div>
-
-          <div className="flex gap-2 mt-3 items-center">
+          <div className="flex gap-2 mt-3">
             <button
-              onClick={handleEditPrice}
-              className="border p-2 border-(--main-blue-color) text-white bg-(--main-blue-color) flex justify-center items-center rounded-md"
+              onClick={handleSubmit}
+              className="bg-(--main-blue-color) text-white px-4 py-2 rounded-md"
             >
-              Edit
+              {update_loading ? "Loading..." : "Edit"}
             </button>
             <button
               onClick={() => setShowEditPrice(false)}
-              className="border p-2 border-(--main-blue-color) text-(--main-blue-color) flex justify-center items-center rounded-md"
+              className="border border-(--main-blue-color) text-(--main-blue-color) px-4 py-2 rounded-md"
             >
               Cancel
             </button>

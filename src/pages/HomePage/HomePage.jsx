@@ -4,22 +4,29 @@ import BanelDetails from "../../components/Home/Banels/BanelsDetails/BanelDetail
 import Breadcrumb from "../../components/Breadcrumb/Breadcrumb";
 import { Orders } from "../../utils/data";
 import { toast } from "react-toastify";
-
+import { useDispatch, useSelector } from "react-redux";
+import { handleFetchUsersQuotations } from "../../features/usersSlice";
+import { configs } from "../../configs";
 
 export default function HomePage() {
   const [showStatusModal, setShowStatusModal] = useState(false);
-const [selectedStatus, setSelectedStatus] = useState(null);
+  const [selectedStatus, setSelectedStatus] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [rowData, setRowData] = useState({});
-  const userData = JSON.parse(localStorage?.getItem("COATECH_USER_DATA")) || [];
+  const userData = JSON.parse(localStorage?.getItem(configs.COATECH_USER_PROFILE)) || [];
   const [showUserDetailsModal, setShowUSerDetailsModal] = useState(false);
-  const [allOrders , setAllOrders] = useState(JSON.parse(localStorage?.getItem("All_admin_quotations")) || Orders)
+  const [allOrders, setAllOrders] = useState(
+    JSON.parse(localStorage?.getItem("All_admin_quotations")) || Orders
+  );
+  const dispatch = useDispatch();
+  const {users_quotations , users_quotations_loading} = useSelector(state => state?.users)
+
   const columns = [
     {
-      dataIndex: "id",
-      key: "id",
+      dataIndex: "qoute_id",
+      key: "qoute_id",
       title: "Quotation Number",
-      render:(row) => <p className="font-semibold">{row}</p>
+      render: (row) => <p className="font-semibold">{row}</p>,
     },
     {
       dataIndex: "created_at",
@@ -37,15 +44,15 @@ const [selectedStatus, setSelectedStatus] = useState(null);
     },
     {
       title: "Response",
-      dataIndex: "response",
-      key: "response",
+      dataIndex: "",
+      key: "",
       render: (row) => (
         <div
           className={`flex justify-center w-9 h-9 rounded-full items-center border border-gray-200 ${
-            row ? "bg-green-500 text-white" : "bg-red-500 text-white"
+            row?.admin_id ? "bg-green-500 text-white" : "bg-red-500 text-white"
           }`}
         >
-          {row ? (
+          {row?.admin_id != null ? (
             <div className="flex justify-center items-center bg-green-100 text-green-700 whitespace-nowrap p-2 rounded-lg">
               Support Reply
             </div>
@@ -59,24 +66,26 @@ const [selectedStatus, setSelectedStatus] = useState(null);
     },
     {
       title: "Response Time",
-      key: "response_time",
+      key: "updated_at",
+      dataIndex: "updated_at",
       render: (row) => {
-        if (!row.response) return <p>--</p>;
-    
-        const now = new Date(); // أو تستخدمي row.responded_at لو عندك
+        if (!row) return <p>--</p>;
         return (
           <p>
-            {now.toLocaleDateString()}{" "}
-            {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </p>
+          {new Date(row).toLocaleDateString()}{" "}
+          {new Date(row).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
+        </p>
         );
       },
-    },       
+    },
     {
       title: "Actions",
       render: (row) => (
         <div className="flex gap-1 items-center">
-          <button
+           <button
             onClick={() => {
               setShowDetailsModal(true);
               setRowData(row);
@@ -86,7 +95,7 @@ const [selectedStatus, setSelectedStatus] = useState(null);
             Details
           </button>
 
-          <button
+          {/* {userData?.admin_role !== "user" && <button
             onClick={() => {
               setShowStatusModal(true);
               setRowData(row);
@@ -94,7 +103,7 @@ const [selectedStatus, setSelectedStatus] = useState(null);
             className="bg-(--main-blue-color) px-4 py-2 rounded-md text-white transition"
           >
             Edit
-          </button>
+          </button>} */}
 
           {/* <button
           onClick={() => {
@@ -109,26 +118,25 @@ const [selectedStatus, setSelectedStatus] = useState(null);
       ),
     },
   ];
-  
+
   function handleEditStatus() {
     const updatedOrders = allOrders.map((order) =>
       order.id === rowData.id ? { ...order, response: selectedStatus } : order
     );
-  
+
     setAllOrders(updatedOrders);
     localStorage.setItem("All_admin_quotations", JSON.stringify(updatedOrders));
     toast.success("Status updated successfully");
-  
+
     setShowStatusModal(false);
   }
-  
+
   useEffect(() => {
     if (showStatusModal) {
       setSelectedStatus(rowData?.response);
     }
   }, [showStatusModal]);
 
-  
   const user_columns = [
     {
       dataIndex: "id",
@@ -170,8 +178,13 @@ const [selectedStatus, setSelectedStatus] = useState(null);
   ];
 
   useEffect(() => {
-    localStorage.setItem("All_admin_quotations",JSON.stringify(Orders));
-  } , [])
+    localStorage.setItem("All_admin_quotations", JSON.stringify(Orders));
+  }, []);
+
+  useEffect(() => {
+    dispatch(handleFetchUsersQuotations())
+  } , [dispatch])
+
 
   return (
     <div>
@@ -184,44 +197,45 @@ const [selectedStatus, setSelectedStatus] = useState(null);
         />
       </div>
       <div className="p-2 rounded-md  mt-3">
-        <Table columns={columns} dataSource={allOrders} />
+        <Table scroll={{ x: "max-content" }} columns={columns} loading={users_quotations_loading} dataSource={users_quotations?.data} />
       </div>
 
       <Modal
-  open={showStatusModal}
-  onCancel={() => setShowStatusModal(false)}
-  title="Change Quotation Status"
-  footer={null}
->
-  <div className="flex flex-col gap-3">
-    <label className="font-medium text-gray-700">Response Status</label>
-    <select
-      value={selectedStatus ?? rowData?.response}
-      onChange={(e) => setSelectedStatus(Number(e.target.value))}
-      className="border rounded-md p-2"
-    >
-      <option value="" selected disabled>Change Status</option>
-      <option value={1}>Responded</option>
-      <option value={0}>Pending</option>
-    </select>
-
-    <div className="flex gap-2 mt-4">
-      <button
-        onClick={handleEditStatus}
-        className="bg-blue-600 text-white px-4 py-2 rounded-md"
+        open={showStatusModal}
+        onCancel={() => setShowStatusModal(false)}
+        title="Change Quotation Status"
+        footer={null}
       >
-        Save
-      </button>
-      <button
-        onClick={() => setShowStatusModal(false)}
-        className="border border-blue-600 text-blue-600 px-4 py-2 rounded-md"
-      >
-        Cancel
-      </button>
-    </div>
-  </div>
-</Modal>
+        <div className="flex flex-col gap-3">
+          <label className="font-medium text-gray-700">Response Status</label>
+          <select
+            value={selectedStatus ?? rowData?.response}
+            onChange={(e) => setSelectedStatus(Number(e.target.value))}
+            className="border rounded-md p-2"
+          >
+            <option value="" selected disabled>
+              Change Status
+            </option>
+            <option value={1}>Responded</option>
+            <option value={0}>Pending</option>
+          </select>
 
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={handleEditStatus}
+              className="bg-blue-600 text-white px-4 py-2 rounded-md"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => setShowStatusModal(false)}
+              className="border border-blue-600 text-blue-600 px-4 py-2 rounded-md"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         width={800}
@@ -232,16 +246,18 @@ const [selectedStatus, setSelectedStatus] = useState(null);
         footer={null}
       >
         <Table
-          scroll={{ x: "max-content" }}
+            scroll={{ x: "max-content" }}
           columns={user_columns}
           dataSource={[userData]}
         />
       </Modal>
 
       <BanelDetails
+        data={rowData}
+        quote_id = {rowData?.qoute_id}
         open={showDetailsModal}
         setOpen={setShowDetailsModal}
-        item={rowData}
+        item={rowData?.products}
       />
     </div>
   );

@@ -1,10 +1,35 @@
-.main-layout {
-    display: grid;
+// .main-layout {
+//     display: grid;
 
+//     .main-content {
+//         max-width: calc(100% - 290px);
+//         width: 100%;
+//         margin-right: 10px;
+//         margin-left: 280px !important;
+//     }
+// }
+
+.main-layout {
+    min-height: 100vh;
+    max-width: calc(100% - 270);
+  }
+  
+  /* Sidebar */
+  .sidebar {
+    width: 270px;
+    background-color: white;
+    transition: transform 0.3s ease;
+  }
+  
+  /* Main Content */
+  .main-content {
+    margin-left: 270px;
+  }
+  
+  /* موبايل */
+  @media (max-width: 768px) {
     .main-content {
-        max-width: calc(100% - 290px);
-        width: 100%;
-        margin-right: 10px;
-        margin-left: 280px !important;
+      margin-left: 0 !important;
     }
-}
+  }
+  

@@ -1,18 +1,21 @@
 import React, { useState } from 'react';
+import {configs} from '../../configs/index';
 
-export default function Header() {
+export default function Header({open , setOpen}) {
   const [openDropDown, setOpenDropDown] = useState(false);
-  const userInfo = JSON.parse(localStorage.getItem("user_info"))
+  const userInfo = JSON.parse(localStorage.getItem(configs.COATECH_USER_PROFILE))
   return (
-    <div className="header relative p-4">
-      <div className="flex justify-between items-center">
+    <div className="header relative px-8 p-4">
+      <div className="!flex  px-4 justify-between items-center">
         {/* Menu icon */}
-        <img src="https://admin.sawani.ae/menu.svg" alt="menu" className="w-6 h-6 cursor-pointer" />
+        <img onClick={() => {
+          setOpen(prev => !prev)
+        }} src="https://admin.sawani.ae/menu.svg" alt="menu" className="w-6 h-6 cursor-pointer" />
         
         {/* Profile Icon + Dropdown */}
         <div className="relative">
          <div className='flex gap-3'>
-         <h4 className='my-auto  text-lg font-semibold text-(--main-red-color)'>{userInfo?.role}</h4>
+         <h4 className='my-auto  text-lg font-semibold text-(--main-red-color)'>{userInfo?.admin_role}</h4>
           <img
             src="https://admin.sawani.ae/person.png"
             alt="user"

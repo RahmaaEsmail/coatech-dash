@@ -1,7 +1,14 @@
+@charset "UTF-8";
 .input-group {
   display: flex;
   flex-direction: column;
   gap: 7px;
+}
+.input-group textarea, .input-group select {
+  border: 1px solid #ccc !important;
+  outline: none;
+  border-radius: 6px;
+  padding: 10px 7px;
 }
 .input-group label {
   font-size: 16px;
@@ -23,15 +30,27 @@ body {
 }
 
 .main-layout {
-  display: grid;
-}
-.main-layout .main-content {
-  max-width: calc(100% - 290px);
-  width: 100%;
-  margin-right: 10px;
-  margin-left: 280px !important;
+  min-height: 100vh;
 }
 
+/* Sidebar */
+.sidebar {
+  width: 270px;
+  background-color: white;
+  transition: transform 0.3s ease;
+}
+
+/* Main Content */
+.main-content {
+  margin-left: 270px;
+}
+
+/* موبايل */
+@media (max-width: 768px) {
+  .main-content {
+    margin-left: 0 !important;
+  }
+}
 .sidebar {
   position: fixed;
   top: 0px;

@@ -3,23 +3,41 @@ import React, { useEffect, useState } from "react";
 import BanelDetails from "../../../components/Home/Banels/BanelsDetails/BanelDetails";
 import Breadcrumb from "../../../components/Breadcrumb/Breadcrumb";
 import { ALL_USERS, Orders } from "../../../utils/data";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { handleFetchSpecificUser } from "../../../features/usersSlice";
 
 
 export default function UserDetails() {
     const {user_id} = useParams();
-    const [filteredData , setFilteredData] = useState([]);
-    const [filteredUsers , setFilteredUsers] = useState([]);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const navigate = useNavigate();
   const [rowData, setRowData] = useState({});
-  const userData = JSON.parse(localStorage?.getItem("COATECH_USER_DATA")) || [];
   const [showUserDetailsModal, setShowUSerDetailsModal] = useState(false);
+  const {specific_user , specific_user_loading} = useSelector(state => state?.users);
+  const dispatch  = useDispatch();
+
   const columns = [
     {
-      dataIndex: "id",
-      key: "id",
-      title: "Quotation Number",
+      dataIndex: "user_id",
+      key: "user_id",
+      title: "#",
       render:(row) => <p className="font-semibold">{row}</p>
+    },
+    {
+      dataIndex:"user_name",
+      key:"user_name",
+      title:"User Name"
+    },
+    {
+      dataIndex:"user_email",
+      key:"user_email",
+      title:"Email",
+      render:(row) => <a href={`mailto:${row}`}>{row}</a>
+    },
+    {
+      dataIndex:"address",
+      key:"address",
+      title:"Address"
     },
     {
       dataIndex: "created_at",
@@ -36,56 +54,18 @@ export default function UserDetails() {
       ),
     },
     {
-      title: "Response",
-      dataIndex: "response",
-      key: "response",
-      render: (row) => (
-        <div
-          className={`flex justify-center w-9 h-9 rounded-full items-center border border-gray-200 ${
-            row ? "bg-green-500 text-white" : "bg-red-500 text-white"
-          }`}
-        >
-          {row ? (
-            <div className="flex justify-center items-center bg-green-100 text-green-700 whitespace-nowrap p-2 rounded-lg">
-              Support Reply
-            </div>
-          ) : (
-            <div className="flex justify-center items-center bg-gray-100 text-gray-700 whitespace-nowrap p-2 rounded-lg">
-              Pending
-            </div>
-          )}
-        </div>
-      ),
-    },
-    {
-      title: "Response Time",
-      dataIndex: "response_time",
-      key: "response_time",
-      render:(row) => <p>{row ? row :"--"}</p>
-    },
-    {
       title: "Actions",
       render: (row) => (
         <div className="flex gap-1 items-center">
           <button
             onClick={() => {
-              setShowDetailsModal(true);
+             navigate(`/user_quotations/${row?.user_id}`)
               setRowData(row);
             }}
             className="bg-(--main-blue-color) px-4 py-2 rounded-md text-white transition"
           >
-            Details
+            Quotations
           </button>
-
-          <button
-          onClick={() => {
-            setShowUSerDetailsModal(true);
-            setRowData(row);
-          }}
-          className="bg-(--main-blue-color) px-4 py-2 rounded-md text-white transition"
-        >
-          User Details
-        </button>
         </div>
       ),
     },
@@ -131,13 +111,11 @@ export default function UserDetails() {
     },
   ];
 
-  useEffect(() => {
-    setFilteredData(Orders?.filter(order => order?.user_id == user_id))
-  } , [user_id])
 
   useEffect(() => {
-    setFilteredUsers(ALL_USERS?.filter(user => user?.id == user_id))
-  } , [rowData])
+    dispatch(handleFetchSpecificUser({user_id}))
+  }, [dispatch , user_id])
+
   return (
     <div>
       <div className="px-2.5">
@@ -150,7 +128,7 @@ export default function UserDetails() {
         />
       </div>
       <div className="p-2 rounded-md  mt-3">
-        <Table scroll={{x :"max-content"}} columns={columns} dataSource={filteredData} />
+        <Table scroll={{x :"max-content"}} loading={specific_user_loading} columns={columns} dataSource={specific_user?.data} />
       </div>
 
       <Modal
@@ -162,17 +140,18 @@ export default function UserDetails() {
         footer={null}
       >
         <Table
+          loading={specific_user_loading}
           scroll={{ x: "max-content" }}
           columns={user_columns}
-          dataSource={filteredUsers}
+          dataSource={specific_user?.data}
         />
       </Modal>
 
-      <BanelDetails
+      {/* <BanelDetails
         open={showDetailsModal}
         setOpen={setShowDetailsModal}
-        item={rowData}
-      />
+        item={specific_user?.qoutes}
+      /> */}
     </div>
   );
 }
